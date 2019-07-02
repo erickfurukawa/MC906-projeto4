@@ -6,10 +6,22 @@ import random
 # TensorFlow and tf.keras
 import tensorflow as tf
 from tensorflow import keras
-
+from tensorflow.keras.layers import Conv2D, Flatten, Dense
+from tensorflow.keras.datasets import mnist
 # Helper libraries
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import confusion_matrix
+
+
+def draw_confusion_matrix(true,preds):
+    conf_matrix = confusion_matrix(true,preds)
+    sns.heatmap(conf_matrix, annot=True,annot_kws={"size":12},fmt='g', cbar=False,cmap="viridis")
+    #plt.xlabel
+    plt.xticks([0.5,1.5,2.5,3.5],['akatsuki','hibiki','ikazuchi','inazuma'],rotation='horizontal')
+    plt.yticks([0.5,1.5,2.5,3.5],['akatsuki','hibiki','ikazuchi','inazuma'],rotation='horizontal')
+    plt.show()
 
 
 def plot_image(i, predictions_array, true_label, img):
@@ -49,48 +61,56 @@ kernel = np.array([[-1, -1, -1],
                    [-1, -1, -1]])
 
 #get training data
-dataQtd= 0
+dataQtd= 4*964
 imgData = []
-
+i = 0
 # akatsuki
 imgFolder = "./cropper/akatsuki"
 fileList = os.listdir(imgFolder)
-dataQtd += len(fileList)
 for filePath in fileList:
+    if i >=964:
+        break;
+    i+=1
     image = cv2.imread(imgFolder+"/"+filePath,cv2.IMREAD_COLOR)
     grayImage = cv2.imread(imgFolder+"/"+filePath,cv2.IMREAD_GRAYSCALE)
-    grayImage = cv2.filter2D(grayImage,-1,kernel)
     imgData.append((image,grayImage,0))
 
+i = 0
 # hibiki
 imgFolder = "./cropper/hibiki"
 fileList = os.listdir(imgFolder)
-dataQtd += len(fileList)
 for filePath in fileList:
+    if i >=964:
+        break;
+    i+=1
     image = cv2.imread(imgFolder+"/"+filePath,cv2.IMREAD_COLOR)
     grayImage = cv2.imread(imgFolder+"/"+filePath,cv2.IMREAD_GRAYSCALE)
-    grayImage = cv2.filter2D(grayImage,-1,kernel)
     imgData.append((image,grayImage,1))
 
+i = 0
 # ikazuchi
 imgFolder = "./cropper/ikazuchi"
 fileList = os.listdir(imgFolder)
-dataQtd += len(fileList)
 for filePath in fileList:
+    if i >=964:
+        break;
+    i+=1
     image = cv2.imread(imgFolder+"/"+filePath,cv2.IMREAD_COLOR)
     grayImage = cv2.imread(imgFolder+"/"+filePath,cv2.IMREAD_GRAYSCALE)
-    grayImage = cv2.filter2D(grayImage,-1,kernel)
     imgData.append((image,grayImage,2))
 
+i = 0
 # inazuma
 imgFolder = "./cropper/inazuma"
 fileList = os.listdir(imgFolder)
-dataQtd += len(fileList)
 for filePath in fileList:
+    if i >=964:
+        break;
+    i+=1
     image = cv2.imread(imgFolder+"/"+filePath,cv2.IMREAD_COLOR)
     grayImage = cv2.imread(imgFolder+"/"+filePath,cv2.IMREAD_GRAYSCALE)
-    grayImage = cv2.filter2D(grayImage,-1,kernel)
     imgData.append((image,grayImage,3))
+
 #----------------------------------------------------------------
 #get testing data
 testDataQtd= 0
@@ -102,7 +122,6 @@ testDataQtd += len(fileList)
 for filePath in fileList:
     image = cv2.imread(imgFolder+"/"+filePath,cv2.IMREAD_COLOR)
     grayImage = cv2.imread(imgFolder+"/"+filePath,cv2.IMREAD_GRAYSCALE)
-    grayImage = cv2.filter2D(grayImage,-1,kernel)
     testImgData.append((image,grayImage,0))
 
 # hibiki
@@ -112,7 +131,6 @@ testDataQtd += len(fileList)
 for filePath in fileList:
     image = cv2.imread(imgFolder+"/"+filePath,cv2.IMREAD_COLOR)
     grayImage = cv2.imread(imgFolder+"/"+filePath,cv2.IMREAD_GRAYSCALE)
-    grayImage = cv2.filter2D(grayImage,-1,kernel)
     testImgData.append((image,grayImage,1))
 
 # ikazuchi
@@ -122,7 +140,6 @@ testDataQtd += len(fileList)
 for filePath in fileList:
     image = cv2.imread(imgFolder+"/"+filePath,cv2.IMREAD_COLOR)
     grayImage = cv2.imread(imgFolder+"/"+filePath,cv2.IMREAD_GRAYSCALE)
-    grayImage = cv2.filter2D(grayImage,-1,kernel)
     testImgData.append((image,grayImage,2))
 
 # inazuma
@@ -132,7 +149,6 @@ testDataQtd += len(fileList)
 for filePath in fileList:
     image = cv2.imread(imgFolder+"/"+filePath,cv2.IMREAD_COLOR)
     grayImage = cv2.imread(imgFolder+"/"+filePath,cv2.IMREAD_GRAYSCALE)
-    grayImage = cv2.filter2D(grayImage,-1,kernel)
     testImgData.append((image,grayImage,3))
 #----------------------------------------------------------------
 
@@ -167,7 +183,6 @@ train_grayImages /= 255
 test_images /= 255
 test_grayImages /= 255
 
-
 plt.figure(figsize=(10,10))
 for i in range(25):
     plt.subplot(5,5,i+1)
@@ -178,20 +193,26 @@ for i in range(25):
     plt.xlabel(class_names[train_labels[i]])
 plt.show()
 
-#building the model
+train_grayImages = train_images.reshape(dataQtd,64,64,3)
+test_grayImages = test_images.reshape(testDataQtd,64,64,3)
+
 model = keras.Sequential([
-    keras.layers.Flatten(input_shape=(64, 64)),
+    keras.layers.Conv2D(32,kernel_size=3, activation='relu',input_shape=(64,64,3)),
+    keras.layers.MaxPooling2D(pool_size=(2,2), padding='same'),
+    keras.layers.Conv2D(64,kernel_size=3, activation='relu'),
+    keras.layers.MaxPooling2D(pool_size=(2,2), padding='same'),
+    keras.layers.Flatten(),
     keras.layers.Dense(128, activation=tf.nn.relu),
-    keras.layers.Dense(16, activation=tf.nn.relu),
     keras.layers.Dense(4, activation=tf.nn.softmax)
 ])
+
 
 #compiling
 model.compile(optimizer='adam', 
               loss='sparse_categorical_crossentropy',
               metrics=['accuracy'])
 #training
-model.fit(train_grayImages, train_labels, epochs=10)
+model.fit(train_grayImages, train_labels, epochs=10, validation_split=0.1)
 
 #testing
 test_loss, test_acc = model.evaluate(test_grayImages, test_labels)
@@ -200,10 +221,17 @@ print('Test accuracy:', test_acc)
 #predictions
 predictions = model.predict(test_grayImages)
 
+pred_labels = []
+for i in range(len(predictions)):
+    predicted_label = np.argmax(predictions[i])
+    pred_labels.append(predicted_label)
+
+draw_confusion_matrix(test_labels,pred_labels)
+"""
 for i in range(20):
     plt.figure(figsize=(6,3))
     plt.subplot(1,2,1)
     plot_image(i, predictions, test_labels, test_images)
     plt.subplot(1,2,2)
     plot_value_array(i, predictions,  test_labels)
-    plt.show()
+    plt.show()"""
